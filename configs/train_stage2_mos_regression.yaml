@@ -1,7 +1,9 @@
 dataset_root: Data/koniq_train
-mos_csv_path: Data/metas/koniq10k_scores_and_distriutions.csv
+mos_csv_path: Data/metas/koniq10k_scores_and_distributions.csv
 train_list_json: Data/metas/koniq_train.json
 test_list_json: Data/metas/koniq_test.json
+mos_field: MOS_zscore
+out_range: [0.0, 100.0]
 batch_size: 32
 epochs: 30
 learning_rate: 0.0005

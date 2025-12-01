@@ -123,6 +123,7 @@ class KonIQMOSDataset(Dataset):
         test_ratio: float = 0.1,
         seed: int = 42,
         file_list_json: Optional[str] = None,
+        mos_field: str = "MOS",
     ):
         self.root = root
         # 构建 MOS 映射
@@ -134,7 +135,9 @@ class KonIQMOSDataset(Dataset):
                     name = row.get("image_name") or row.get("path") or row.get("name")
                     if not name:
                         continue
-                    mos_val = row.get("mos") or row.get("MOS") or row.get("label")
+                    mos_val = row.get(mos_field)
+                    if mos_val is None:
+                        mos_val = row.get("mos") or row.get("MOS") or row.get("label")
                     mos_map[str(name)] = float(mos_val)
         # 构建文件列表
         file_list = None

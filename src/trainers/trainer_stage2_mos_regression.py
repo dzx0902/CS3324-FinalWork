@@ -39,17 +39,19 @@ def train_stage2(config: dict) -> str:
     stage1_ckpt = config.get("stage1_ckpt")
     train_list_json = config.get("train_list_json")
     test_list_json = config.get("test_list_json")
+    mos_field = config.get("mos_field", "MOS")
+    out_range = tuple(config.get("out_range", (0.0, 100.0)))
 
-    ds_tr = KonIQMOSDataset(dataset_root, csv_path, split="train", image_size=image_size, file_list_json=train_list_json)
-    ds_va = KonIQMOSDataset(dataset_root, csv_path, split="val", image_size=image_size, file_list_json=train_list_json)
+    ds_tr = KonIQMOSDataset(dataset_root, csv_path, split="train", image_size=image_size, file_list_json=train_list_json, mos_field=mos_field)
+    ds_va = KonIQMOSDataset(dataset_root, csv_path, split="val", image_size=image_size, file_list_json=train_list_json, mos_field=mos_field)
     dl_tr = DataLoader(ds_tr, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True)
     dl_va = DataLoader(ds_va, batch_size=batch_size, shuffle=False, num_workers=4, pin_memory=True)
 
     backbone = ResNetBackbone50(pretrained=True)
     if mode == "resnet_baseline":
-        model = ResNetBaselineIQA(backbone).to(device)
+        model = ResNetBaselineIQA(backbone, out_range=out_range).to(device)
     else:
-        model = CAQF_IQA(backbone).to(device)
+        model = CAQF_IQA(backbone, out_range=out_range).to(device)
     if mode == "ours_stage1_pretrained" and stage1_ckpt:
         _load_backbone_from_stage1(backbone, stage1_ckpt)
 

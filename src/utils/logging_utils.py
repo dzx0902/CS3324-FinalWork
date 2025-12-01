@@ -1,10 +1,8 @@
 import csv
 import os
 
-
 def ensure_dir(path: str):
     os.makedirs(path, exist_ok=True)
-
 
 class SimpleCSVLogger:
     def __init__(self, path: str, fieldnames):

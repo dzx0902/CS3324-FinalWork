@@ -44,7 +44,9 @@ Data/
   kadid_test/
   agiqa_test/
 ```
-  - `metas/koniq_mos.csv` 示例：
+  - `metas/koniq10k_scores_and_distributions.csv` 示例（首行字段）：
+    `image_name,c1,c2,c3,c4,c5,c_total,MOS,SD,MOS_zscore`
+    实际训练默认读取 `MOS_zscore` 字段（0–100 刻度）；若改用 `MOS`（1–5 刻度），请把 `out_range` 改为 `[1.0, 5.0]`。
 ```
 image_name,mos
 12345.jpg,56.78
@@ -93,7 +95,9 @@ make_tables.py
   - `image_size`: 训练输入尺寸
 - `configs/train_stage2_mos_regression.yaml`
   - `dataset_root`: KonIQ 训练图片根目录（如 `Data/koniq_train`）
-  - `csv_path`: MOS 标签 CSV（如 `Data/metas/koniq_mos.csv`）
+  - `mos_csv_path`: MOS 标签 CSV（如 `Data/metas/koniq10k_scores_and_distributions.csv`）
+  - `mos_field`: 选择使用的字段（默认 `MOS_zscore`，可设为 `MOS`）
+  - `out_range`: 模型输出范围；`MOS_zscore` 用 `[0,100]`，`MOS` 用 `[1,5]`
   - `batch_size`, `epochs`, `learning_rate`, `image_size`
   - `mode`: `ours_stage1_pretrained` / `ours_no_pretrain` / `resnet_baseline`
   - `stage1_ckpt`: Stage-1 最优权重路径（`ours_stage1_pretrained` 时使用）
@@ -120,7 +124,7 @@ python train_stage2.py --config configs/train_stage2_mos_regression.yaml
 输出：`checkpoints/stage2_best_<mode>.pth`
 - 统一评估（KonIQ 测试集）
 ```
-python eval_models.py --config configs/eval_cross_dataset.yaml --root Data/koniq_test --csv Data/metas/koniq10k_scores_and_mos.csv --list_json Data/metas/koniq_test.json
+python eval_models.py --config configs/eval_cross_dataset.yaml --root Data/koniq_test --csv Data/metas/koniq10k_scores_and_distributions.csv --list_json Data/metas/koniq_test.json --mos_field MOS
 ```
 输出：`results/eval_results.json`
 

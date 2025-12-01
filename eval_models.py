@@ -30,12 +30,13 @@ def main():
     ap.add_argument("--csv", type=str, default="Data/metas/koniq10k_scores_and_distributions.csv")
     ap.add_argument("--root", type=str, default="Data/koniq_test")
     ap.add_argument("--list_json", type=str, default="Data/metas/koniq_test.json")
+    ap.add_argument("--mos_field", type=str, default="MOS_zscore")
     args = ap.parse_args()
     cfg = load_yaml_config(args.config)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     ensure_dir("results")
 
-    ds = KonIQMOSDataset(args.root, args.csv, split="test", image_size=cfg.get("image_size", 224), file_list_json=args.list_json)
+    ds = KonIQMOSDataset(args.root, args.csv, split="test", image_size=cfg.get("image_size", 224), file_list_json=args.list_json, mos_field=args.mos_field)
     results = {}
     for name, ckpt in cfg["models"].items():
         if not os.path.isfile(ckpt):
