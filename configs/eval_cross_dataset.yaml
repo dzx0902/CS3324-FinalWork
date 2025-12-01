@@ -1,0 +1,11 @@
+datasets:
+  koniq10k: Data/koniq_test
+  spaq: Data/spaq_test
+  kadid10k: Data/kadid_test
+  agiqa3k: Data/agiqa_test
+models:
+  ours_stage1_pretrained: checkpoints/stage2_best_ours_stage1.pth
+  ours_no_pretrain: checkpoints/stage2_best_ours_no_pretrain.pth
+  resnet_baseline: checkpoints/stage2_best_baseline.pth
+  stair_iqa: checkpoints/stair_iqa_best.pth
+  hyper_iqa: checkpoints/hyper_iqa_best.pth

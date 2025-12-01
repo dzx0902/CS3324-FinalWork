@@ -1,0 +1,15 @@
+dataset_root: Data/koniq_train
+mos_csv_path: Data/metas/koniq10k_scores_and_distriutions.csv
+train_list_json: Data/metas/koniq_train.json
+test_list_json: Data/metas/koniq_test.json
+batch_size: 32
+epochs: 30
+learning_rate: 0.0005
+device: cuda
+mode: ours_stage1_pretrained
+stage1_ckpt: checkpoints/stage1_best.pth
+model: caqf
+lambda_srcc: 0.2
+image_size: 224
+val_split: 0.1
+test_split: 0.1
