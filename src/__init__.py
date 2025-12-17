@@ -1,0 +1,2 @@
+"""TinyIQA source package."""
+

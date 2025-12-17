@@ -1,0 +1,15 @@
+mode: tiny_r18
+dataset: koniq
+image_root: data/koniq10k
+train_split: data/metas/koniq_train.json
+val_split: data/metas/koniq_val.json
+output_dir: outputs/koniq_tiny
+epochs: 5
+batch_size: 32
+lr: 1e-4
+optimizer: adamw
+loss:
+  type: mse
+device: cuda
+seed: 42
+

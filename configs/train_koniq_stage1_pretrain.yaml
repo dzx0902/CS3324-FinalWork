@@ -1,0 +1,7 @@
+image_root: data/koniq10k
+file_list: data/metas/koniq_train_list.txt
+out_ckpt: outputs/stage1_pretrain.pth
+epochs: 1
+batch_size: 16
+device: cuda
+

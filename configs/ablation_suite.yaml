@@ -1,0 +1,10 @@
+train_configs:
+  - configs/train_koniq_baseline.yaml
+  - configs/train_koniq_stair.yaml
+  - configs/train_koniq_hyper.yaml
+  - configs/train_koniq_caqf.yaml
+  - configs/train_koniq_caqf_no_attn.yaml
+  - configs/train_koniq_tiny.yaml
+  - configs/train_koniq_tiny_kd.yaml
+eval_config: configs/eval_cross_dataset.yaml
+

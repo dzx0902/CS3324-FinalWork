@@ -1,0 +1,16 @@
+mode: caqf_no_attn
+dataset: koniq
+image_root: data/koniq10k
+train_split: data/metas/koniq_train.json
+val_split: data/metas/koniq_val.json
+output_dir: outputs/koniq_caqf_no_attn
+epochs: 5
+batch_size: 32
+lr: 1e-4
+optimizer: adamw
+loss:
+  type: mse_srcc
+  alpha: 0.5
+device: cuda
+seed: 42
+

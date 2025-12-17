@@ -1,0 +1,33 @@
+models:
+  - resnet_baseline
+  - stair_iqa
+  - hyper_iqa
+  - caqf
+  - caqf_no_attn
+  - tiny_r18
+  - tiny_r18_kd
+datasets:
+  - koniq
+  - spaq
+  - kadid
+  - agiqa
+image_roots:
+  koniq: data/koniq10k
+  spaq: data/spaq
+  kadid: data/kadid10k
+  agiqa: data/agiqa3k
+metas:
+  koniq: data/metas/koniq_test.json
+  spaq: data/metas/spaq_meta.csv
+  kadid: data/metas/kadid10k_meta.csv
+  agiqa: data/metas/agiqa_meta.csv
+ckpts:
+  resnet_baseline: outputs/koniq_baseline/resnet_baseline_best.pth
+  stair_iqa: outputs/koniq_stair/stair_iqa_best.pth
+  hyper_iqa: outputs/koniq_hyper/hyper_iqa_best.pth
+  caqf: outputs/koniq_caqf/caqf_best.pth
+  caqf_no_attn: outputs/koniq_caqf_no_attn/caqf_no_attn_best.pth
+  tiny_r18: outputs/koniq_tiny/tiny_r18_best.pth
+  tiny_r18_kd: outputs/koniq_tiny_kd/tiny_r18_kd_best.pth
+out_dir: results
+
