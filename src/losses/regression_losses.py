@@ -19,10 +19,11 @@ class SRCCLoss(nn.Module):
     """Negative SRCC as loss: 1 - srcc approximated by ranking correlation."""
     def forward(self, y_pred: torch.Tensor, y_true: torch.Tensor) -> torch.Tensor:
         def rankdata(t: torch.Tensor) -> torch.Tensor:
-            args = torch.argsort(t, dim=0)
-            ranks = torch.zeros_like(args, dtype=torch.float32)
-            ranks[args] = torch.arange(t.shape[0], device=t.device, dtype=torch.float32).unsqueeze(-1)
-            return ranks
+            v = t.view(-1)
+            args = torch.argsort(v, dim=0)
+            ranks = torch.empty_like(v, dtype=torch.float32)
+            ranks[args] = torch.arange(v.shape[0], device=t.device, dtype=torch.float32)
+            return ranks.view_as(t)
         rp = rankdata(y_pred)
         rt = rankdata(y_true)
         rp = rp - rp.mean()
