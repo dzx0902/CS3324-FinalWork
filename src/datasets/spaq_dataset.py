@@ -1,22 +1,18 @@
-"""SPAQ dataset loader reading CSV with image paths and MOS."""
+"""SPAQ dataset loader supporting JSON/CSV metas."""
 from __future__ import annotations
-import csv
 import os
 from typing import List, Tuple
 from PIL import Image
 import torch
 from torch.utils.data import Dataset
 import torchvision.transforms as T
+from .meta_utils import load_meta
 
 
 class SPAQDataset(Dataset):
-    def __init__(self, image_root: str, meta_csv: str, transform: T.Compose | None = None):
+    def __init__(self, image_root: str, meta_path: str, transform: T.Compose | None = None):
         self.image_root = image_root
-        self.records: List[Tuple[str, float]] = []
-        with open(meta_csv, "r", encoding="utf-8") as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                self.records.append((row["path"], float(row["mos"])))
+        self.records: List[Tuple[str, float]] = load_meta(meta_path, preferred_mos_key="MOS_zscore")
         self.transform = transform or T.Compose([
             T.Resize((224, 224)),
             T.ToTensor(),
@@ -28,8 +24,7 @@ class SPAQDataset(Dataset):
 
     def __getitem__(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor]:
         rel, mos = self.records[idx]
-        path = os.path.join(self.image_root, rel)
+        path = rel if os.path.isabs(rel) else os.path.join(self.image_root, rel)
         img = Image.open(path).convert("RGB")
         img_t = self.transform(img)
-        return img_t, torch.tensor([mos], dtype=torch.float32)
-
+        return img_t, torch.tensor([float(mos)], dtype=torch.float32)

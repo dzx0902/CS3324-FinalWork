@@ -1,8 +1,8 @@
 mode: hyper_iqa
 dataset: koniq
-image_root: data/koniq10k
+image_root: data
 train_split: data/metas/koniq_train.json
-val_split: data/metas/koniq_val.json
+val_split: data/metas/koniq_test.json
 output_dir: outputs/koniq_hyper
 epochs: 5
 batch_size: 32

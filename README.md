@@ -42,12 +42,16 @@
 - 将图片放置到如下目录：
   - `data/koniq10k/`, `data/spaq/`, `data/kadid10k/`, `data/agiqa3k/`
 - 元信息统一放在 `data/metas/` 下：
-  - KonIQ JSON（示例结构）
+  - KonIQ JSON（示例结构，支持多键名）
     - `koniq_train.json`, `koniq_val.json`, `koniq_test.json`
-    - 每项：`{"path": "images/xxx.jpg", "mos": 73.2}`
+    - 每项可为：
+      - `{"image": "koniq_test/10007357496.jpg", "score": 68.7285714286}`
+      - 或 `{"path": "koniq_test/xxx.jpg", "mos": 73.2}`
+      - MOS 键名优先级：`score` > `mos` > `MOS_zscore` > `MOS`
   - 其它数据集 CSV（示例结构）
-    - `spaq_meta.csv`, `kadid10k_meta.csv`, `agiqa_meta.csv`
-    - 表头至少包含：`path, mos`
+    - `koniq10k_scores_and_distributions.csv`、`spaq_meta.csv`、`kadid10k_meta.csv`、`agiqa_meta.csv`
+    - 路径字段可为：`path`/`image`/`image_name`
+    - MOS 字段优先级：`MOS_zscore` > `MOS` > `mos` > `score`
 - Stage-1 预训练所需的图片列表
   - `data/metas/koniq_train_list.txt`（每行一个相对路径，如 `images/xxx.jpg`）
 
@@ -92,7 +96,7 @@
 - 评估配置（YAML），示例：`configs/eval_cross_dataset.yaml`
   - `models`: 评估的模型列表
   - `datasets`: 评估的数据集列表
-  - `image_roots`/`metas`: 每个数据集的图片根目录与元信息文件
+  - `image_roots`/`metas`: 每个数据集的图片根目录与元信息文件（若 JSON/CSV 内含 `koniq_test/...` 等子目录前缀，建议将 `image_root` 设为 `data`）
   - `ckpts`: 每个模型对应的权重文件
   - `out_dir`: 评估结果输出目录
 

@@ -12,15 +12,15 @@ datasets:
   - kadid
   - agiqa
 image_roots:
-  koniq: data/koniq10k
-  spaq: data/spaq
-  kadid: data/kadid10k
-  agiqa: data/agiqa3k
+  koniq: data
+  spaq: data
+  kadid: data
+  agiqa: data
 metas:
   koniq: data/metas/koniq_test.json
-  spaq: data/metas/spaq_meta.csv
-  kadid: data/metas/kadid10k_meta.csv
-  agiqa: data/metas/agiqa_meta.csv
+  spaq: data/metas/spaq_test.json
+  kadid: data/metas/kadid_test.json
+  agiqa: data/metas/agiqa_test.json
 ckpts:
   resnet_baseline: outputs/koniq_baseline/resnet_baseline_best.pth
   stair_iqa: outputs/koniq_stair/stair_iqa_best.pth

@@ -1,19 +1,18 @@
-"""KonIQ-10k dataset for NR-IQA with MOS labels."""
+"""KonIQ-10k dataset for NR-IQA supporting flexible JSON/CSV metas."""
 from __future__ import annotations
-import json
 import os
-from typing import List, Dict, Tuple
+from typing import List, Tuple
 from PIL import Image
 import torch
 from torch.utils.data import Dataset
 import torchvision.transforms as T
+from .meta_utils import load_meta
 
 
 class KonIQDataset(Dataset):
-    def __init__(self, image_root: str, split_meta: str, transform: T.Compose | None = None):
+    def __init__(self, image_root: str, meta_path: str, transform: T.Compose | None = None):
         self.image_root = image_root
-        with open(split_meta, "r", encoding="utf-8") as f:
-            self.items: List[Dict] = json.load(f)
+        self.records: List[Tuple[str, float]] = load_meta(meta_path, preferred_mos_key="MOS_zscore")
         self.transform = transform or T.Compose([
             T.Resize((224, 224)),
             T.ToTensor(),
@@ -21,13 +20,11 @@ class KonIQDataset(Dataset):
         ])
 
     def __len__(self) -> int:
-        return len(self.items)
+        return len(self.records)
 
     def __getitem__(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor]:
-        it = self.items[idx]
-        path = os.path.join(self.image_root, it["path"])
-        mos = float(it["mos"])
+        rel, mos = self.records[idx]
+        path = rel if os.path.isabs(rel) else os.path.join(self.image_root, rel)
         img = Image.open(path).convert("RGB")
         img_t = self.transform(img)
-        return img_t, torch.tensor([mos], dtype=torch.float32)
-
+        return img_t, torch.tensor([float(mos)], dtype=torch.float32)
