@@ -10,11 +10,15 @@ class ResNetFeatureExtractor(nn.Module):
     def __init__(self, name: str = "resnet50", pretrained: bool = True):
         super().__init__()
         if name == "resnet50":
-            net = tvm.resnet50(weights=tvm.ResNet50_Weights.IMAGENET1K_V2 if pretrained else None)
-            c_out = 2048
+            try:
+                net = tvm.resnet50(weights=tvm.ResNet50_Weights.IMAGENET1K_V2 if pretrained else None)
+            except Exception:
+                net = tvm.resnet50(pretrained=pretrained)
         elif name == "resnet18":
-            net = tvm.resnet18(weights=tvm.ResNet18_Weights.IMAGENET1K_V1 if pretrained else None)
-            c_out = 512
+            try:
+                net = tvm.resnet18(weights=tvm.ResNet18_Weights.IMAGENET1K_V1 if pretrained else None)
+            except Exception:
+                net = tvm.resnet18(pretrained=pretrained)
         else:
             raise ValueError(f"Unsupported backbone {name}")
         self.stem = nn.Sequential(net.conv1, net.bn1, net.relu, net.maxpool)
@@ -22,12 +26,10 @@ class ResNetFeatureExtractor(nn.Module):
         self.layer2 = net.layer2
         self.layer3 = net.layer3
         self.layer4 = net.layer4
-        self.out_channels = {
-            "layer1": list(self.layer1.modules())[-1].bn2.num_features if name != "resnet18" else 64,
-            "layer2": list(self.layer2.modules())[-1].bn2.num_features if name != "resnet18" else 128,
-            "layer3": list(self.layer3.modules())[-1].bn2.num_features if name != "resnet18" else 256,
-            "layer4": c_out,
-        }
+        if name == "resnet50":
+            self.out_channels = {"layer1": 256, "layer2": 512, "layer3": 1024, "layer4": 2048}
+        else:
+            self.out_channels = {"layer1": 64, "layer2": 128, "layer3": 256, "layer4": 512}
 
     def forward(self, x: torch.Tensor) -> Dict[str, torch.Tensor]:
         x = self.stem(x)
