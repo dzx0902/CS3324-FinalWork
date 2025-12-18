@@ -48,8 +48,13 @@
       - `{"image": "koniq_test/10007357496.jpg", "score": 68.7285714286}`
       - 或 `{"path": "koniq_test/xxx.jpg", "mos": 73.2}`
       - MOS 键名优先级：`score` > `mos` > `MOS_zscore` > `MOS`
-  - 其它数据集 CSV（示例结构）
-    - `koniq10k_scores_and_distributions.csv`、`spaq_meta.csv`、`kadid10k_meta.csv`、`agiqa_meta.csv`
+  - 当前仓库已提供的示例元信息文件
+    - KonIQ：`data/metas/koniq_train.json`、`data/metas/koniq_test.json`
+    - SPAQ：`data/metas/spaq_test.json`
+    - KADID：`data/metas/kadid_test.json`
+    - AGIQA：`data/metas/agiqa_test.json`
+  - 可选 CSV（若你拥有官方 CSV）
+    - 示例：`data/metas/koniq10k_scores_and_distributions(c1-c5...).csv`
     - 路径字段可为：`path`/`image`/`image_name`
     - MOS 字段优先级：`MOS_zscore` > `MOS` > `mos` > `score`
 - Stage-1 预训练所需的图片列表
@@ -96,7 +101,7 @@
 - 评估配置（YAML），示例：`configs/eval_cross_dataset.yaml`
   - `models`: 评估的模型列表
   - `datasets`: 评估的数据集列表
-  - `image_roots`/`metas`: 每个数据集的图片根目录与元信息文件（若 JSON/CSV 内含 `koniq_test/...` 等子目录前缀，建议将 `image_root` 设为 `data`）
+  - `image_roots`/`metas`: 每个数据集的图片根目录与元信息文件（若 JSON/CSV 内含 `koniq_test/...` 等子目录前缀，建议将 `image_root` 设为 `data`；本仓库默认使用 `*_test.json`）
   - `ckpts`: 每个模型对应的权重文件
   - `out_dir`: 评估结果输出目录
 
@@ -118,4 +123,50 @@
 - 评估跨数据集：`python eval_models.py --config configs/eval_cross_dataset.yaml`
 - 跑消融套件：`python run_ablation_suite.py --suite configs/ablation_suite.yaml`
 - 生成表格：`python make_tables.py --results results/eval_results.json`
+
+## 完整操作流程
+- 第 0 步：环境与代码
+  - 创建虚拟环境并安装依赖
+  - 确认 `src/`、`configs/`、`data/`、`outputs/`、`results/` 目录存在（缺失的输出目录脚本会自动创建）
+- 第 1 步：数据与元信息
+  - 将图片放在 `data/` 下子目录（例如 `data/koniq_test/...`、`data/koniq_train/...`）
+  - 将元信息放在 `data/metas/`：
+    - KonIQ：`koniq_train.json`、`koniq_test.json`（支持键名 `image`/`path`/`image_name` 与 `score`/`mos`/`MOS_zscore`/`MOS`）
+    - 其它：`spaq_test.json`、`kadid_test.json`、`agiqa_test.json`（同样支持多键名）
+  - 如使用官方 CSV，将 `metas` 指向对应 `.csv` 文件即可
+- 第 2 步：配置文件最小修改
+  - 训练配置 YAML（示例 `configs/train_koniq_baseline.yaml`）：
+    - `image_root`: 若 JSON 的 `image` 带前缀如 `koniq_test/...`，建议设为 `data`
+    - `train_split`/`val_split`: 指向你实际存在的 JSON/CSV
+    - `device`: `cuda` 或 `cpu`（自动回退）
+    - 其余超参按需调整：`epochs`、`batch_size`、`lr`、`loss`
+  - 蒸馏配置（`configs/train_koniq_tiny_kd.yaml`）：
+    - 先跑 baseline，确保 `teacher_ckpt` 指向 `outputs/koniq_baseline/resnet_baseline_best.pth`
+  - 评估配置（`configs/eval_cross_dataset.yaml`）：
+    - `models`: 想评估的模型列表（可删减）
+    - `datasets`: 想评估的数据集列表（可删减）
+    - `image_roots`: 统一设为 `data` 更稳妥
+    - `metas`: 指向各数据集的 `*_test.json` 或 CSV
+    - `ckpts`: 各模型训练得到的最优权重路径
+- 第 3 步：训练不同模型
+  - baseline：`python train_stage2.py --config configs/train_koniq_baseline.yaml`
+  - CAQF：`python train_stage2.py --config configs/train_koniq_caqf.yaml`
+  - CAQF（无注意力）：`python train_stage2.py --config configs/train_koniq_caqf_no_attn.yaml`
+  - Stair：`python train_stage2.py --config configs/train_koniq_stair.yaml`
+  - Hyper：`python train_stage2.py --config configs/train_koniq_hyper.yaml`
+  - Tiny：`python train_stage2.py --config configs/train_koniq_tiny.yaml`
+  - Tiny-KD：`python train_stage2.py --config configs/train_koniq_tiny_kd.yaml`
+  - 每次训练在对应 `outputs/{model}/` 生成 `*_history.json`、曲线图与 `*_best.pth`
+- 第 4 步：跨数据集评估与可视化
+  - `python eval_models.py --config configs/eval_cross_dataset.yaml`
+  - 结果：`results/eval_results.json` 与散点图 `results/{model}_{dataset}_scatter.png`
+- 第 5 步：自动消融与结果表
+  - 一键跑：`python run_ablation_suite.py --suite configs/ablation_suite.yaml`
+  - 生成表格：`python make_tables.py --results results/eval_results.json --out_md results/table.md --out_tex results/table.tex`
+- 第 6 步：常见修改场景
+  - 改用 CSV：仅需替换配置中的 `train_split/val_split/metas` 为 `.csv` 路径
+  - 改 batch/epoch：编辑训练配置的 `batch_size`/`epochs`
+  - 改损失：将 `loss.type` 改为 `mse_srcc` 或 `mse_rank`，并设置 `alpha/margin`
+  - 仅评估某几个模型或数据集：在评估配置中删减对应列表项
+
 
