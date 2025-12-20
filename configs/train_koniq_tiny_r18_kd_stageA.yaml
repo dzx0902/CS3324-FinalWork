@@ -1,0 +1,21 @@
+mode: tiny_r18_kd
+dataset: koniq
+image_root: data
+train_split: data/metas/koniq_train.json
+val_split: data/metas/koniq_test.json
+output_dir: outputs/koniq_tiny_r18_kd_stageA
+epochs: 30
+batch_size: 32
+lr: 1e-4
+optimizer: adamw
+loss:
+  type: mse
+kd:
+  enabled: true
+  stage: "A"
+  alpha: 0.0
+  teacher_ckpt: outputs/koniq_baseline/resnet_baseline_best.pth
+  stageA_ckpt: outputs/koniq_tiny_r18_kd_stageA/tiny_r18_kd_stageA.pth
+device: cuda
+seed: 42
+

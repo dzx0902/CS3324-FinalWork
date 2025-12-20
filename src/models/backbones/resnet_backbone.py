@@ -19,6 +19,11 @@ class ResNetFeatureExtractor(nn.Module):
                 net = tvm.resnet18(weights=tvm.ResNet18_Weights.IMAGENET1K_V1 if pretrained else None)
             except Exception:
                 net = tvm.resnet18(pretrained=pretrained)
+        elif name == "resnet34":
+            try:
+                net = tvm.resnet34(weights=tvm.ResNet34_Weights.IMAGENET1K_V1 if pretrained else None)
+            except Exception:
+                net = tvm.resnet34(pretrained=pretrained)
         else:
             raise ValueError(f"Unsupported backbone {name}")
         self.stem = nn.Sequential(net.conv1, net.bn1, net.relu, net.maxpool)
@@ -28,6 +33,8 @@ class ResNetFeatureExtractor(nn.Module):
         self.layer4 = net.layer4
         if name == "resnet50":
             self.out_channels = {"layer1": 256, "layer2": 512, "layer3": 1024, "layer4": 2048}
+        elif name == "resnet34":
+            self.out_channels = {"layer1": 64, "layer2": 128, "layer3": 256, "layer4": 512}
         else:
             self.out_channels = {"layer1": 64, "layer2": 128, "layer3": 256, "layer4": 512}
 

@@ -21,7 +21,7 @@ from ..models.iqa_heads.resnet_baseline import ResNetBaselineIQA
 from ..models.iqa_heads.stair_iqa import StairIQA
 from ..models.iqa_heads.hyper_iqa import HyperIQA
 from ..models.iqa_heads.caqf_iqa import CAQF_IQA, CAQF_IQA_NoAttn
-from ..models.iqa_heads.tiny_iqa import TinyIQA_R18
+from ..models.iqa_heads.tiny_iqa import TinyIQA_R18, TinyIQA_R34, TinyIQA_R18_MS
 
 
 def build_dataloaders(cfg) -> Tuple[DataLoader, DataLoader]:
@@ -58,7 +58,26 @@ def build_model(mode: str) -> nn.Module:
         return CAQF_IQA_NoAttn()
     if mode in ("tiny_r18", "tiny_r18_kd"):
         return TinyIQA_R18()
+    if mode in ("tiny_r34", "tiny_r34_kd"):
+        return TinyIQA_R34()
+    if mode in ("tiny_r18_ms", "tiny_r18_ms_kd"):
+        return TinyIQA_R18_MS()
     raise ValueError(f"Unknown mode {mode}")
+
+
+def build_model_and_teacher(cfg, device):
+    m = build_model(cfg.mode).to(device)
+    t = None
+    kd_cfg = cfg.kd or {}
+    if str(cfg.mode).lower().endswith("_kd") or kd_cfg.get("enabled", False):
+        t = ResNetBaselineIQA().to(device)
+        ck = kd_cfg.get("teacher_ckpt") or cfg.teacher_ckpt
+        if ck:
+            load_model_ckpt(t, ck, strict=False)
+        t.eval()
+        for p in t.parameters():
+            p.requires_grad = False
+    return m, t
 
 
 def train_stage2(config_path: str) -> None:
@@ -67,14 +86,8 @@ def train_stage2(config_path: str) -> None:
     set_global_seed(cfg.seed)
     device = torch.device(cfg.device if torch.cuda.is_available() else "cpu")
     train_loader, val_loader = build_dataloaders(cfg)
-    model = build_model(cfg.mode).to(device)
+    model, teacher = build_model_and_teacher(cfg, device)
     loss_fn = build_loss(cfg.loss)
-    if cfg.mode == "tiny_r18_kd" and cfg.teacher_ckpt:
-        teacher = ResNetBaselineIQA().to(device)
-        load_model_ckpt(teacher, cfg.teacher_ckpt, strict=True)
-        teacher.eval()
-    else:
-        teacher = None
     if cfg.optimizer.lower() == "adamw":
         optimizer = torch.optim.AdamW(model.parameters(), lr=cfg.lr, weight_decay=cfg.weight_decay)
     else:
@@ -82,10 +95,18 @@ def train_stage2(config_path: str) -> None:
     history: List[dict] = []
     best_metric = -1.0
     best_path = os.path.join(cfg.output_dir, f"{cfg.mode}_best.pth")
+    kd_cfg = cfg.kd or {}
+    kd_stage = str(kd_cfg.get("stage", "")).upper()
+    if kd_stage == "B" and kd_cfg.get("stageA_ckpt"):
+        try:
+            state = torch.load(kd_cfg["stageA_ckpt"], map_location="cpu")
+            model.load_state_dict(state["model"], strict=False)
+        except Exception:
+            pass
     for epoch in range(1, cfg.epochs + 1):
         model.train()
         losses = []
-        pbar = tqdm(train_loader, desc=f"Train Epoch {epoch}", leave=False)
+        pbar = tqdm(train_loader, desc=f"Train Epoch {epoch} [{cfg.mode} {kd_stage or 'S'}]", leave=False)
         for imgs, mos in pbar:
             imgs = imgs.to(device)
             mos = mos.to(device)
@@ -93,10 +114,13 @@ def train_stage2(config_path: str) -> None:
             if teacher is not None:
                 with torch.no_grad():
                     t_pred = teacher(imgs)
-                alpha = float(cfg.loss.get("kd_alpha", 0.5))
-                kd = torch.mean((pred - t_pred) ** 2)
-                mse = torch.mean((pred - mos) ** 2)
-                loss = mse + alpha * kd
+                if kd_stage == "A":
+                    loss = torch.mean((pred - t_pred) ** 2)
+                else:
+                    alpha = float(kd_cfg.get("alpha", cfg.loss.get("kd_alpha", 0.1)))
+                    kd = torch.mean((pred - t_pred) ** 2)
+                    mse = torch.mean((pred - mos) ** 2)
+                    loss = mse + alpha * kd
             else:
                 loss = loss_fn(pred, mos)
             optimizer.zero_grad()
@@ -120,10 +144,10 @@ def train_stage2(config_path: str) -> None:
         val_plcc = plcc(all_y, all_p)
         val_srcc = srcc(all_y, all_p)
         val_loss = float(sum(val_losses) / max(1, len(val_losses)))
-        rec = {"epoch": epoch, "train_loss": avg_train, "val_loss": val_loss, "val_plcc": val_plcc, "val_srcc": val_srcc}
+        rec = {"epoch": epoch, "train_loss": avg_train, "val_loss": val_loss, "val_plcc": val_plcc, "val_srcc": val_srcc, "stage": kd_stage or "S"}
         history.append(rec)
         save_history(history, os.path.join(cfg.output_dir, f"{cfg.mode}_history.json"))
-        plot_training_curves(history, cfg.output_dir, title_prefix=cfg.mode)
+        plot_training_curves(history, cfg.output_dir, title_prefix=f"{cfg.mode}_{kd_stage or 'S'}")
         metric_for_best = val_srcc
         if metric_for_best > best_metric:
             best_metric = metric_for_best
