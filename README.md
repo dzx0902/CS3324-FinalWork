@@ -124,6 +124,73 @@
 - 跑消融套件：`python run_ablation_suite.py --suite configs/ablation_suite.yaml`
 - 生成表格：`python make_tables.py --results results/eval_results.json`
 
+## 统一入口：tinyiqa.py
+- 查看帮助
+  - `python tinyiqa.py`
+- Stage-1 预训练
+  - `python tinyiqa.py stage1 --image_root data/koniq10k --file_list data/metas/koniq_train_list.txt --out_ckpt outputs/stage1_pretrain.pth --epochs 1`
+- Stage-2 训练
+  - 指定配置：`python tinyiqa.py train --config configs/train_koniq_baseline.yaml`
+  - 使用别名：
+    - `python tinyiqa.py train --alias baseline`
+    - `python tinyiqa.py train --alias stair`
+    - `python tinyiqa.py train --alias hyper`
+    - `python tinyiqa.py train --alias caqf`
+    - `python tinyiqa.py train --alias caqf_no_attn`
+    - `python tinyiqa.py train --alias tiny_r18`
+    - `python tinyiqa.py train --alias tiny_r18_kd_stageA`
+    - `python tinyiqa.py train --alias tiny_r18_kd_stageB`
+    - `python tinyiqa.py train --alias tiny_r34`
+    - `python tinyiqa.py train --alias tiny_r34_kd_stageA`
+    - `python tinyiqa.py train --alias tiny_r34_kd_stageB`
+- 跨数据集评估
+  - `python tinyiqa.py eval --config configs/eval_cross_dataset.yaml`
+  - 可调：`--batch_size 64 --num_workers 4`
+- 消融套件（自动训练+评估）
+  - `python tinyiqa.py ablation --suite configs/ablation_suite.yaml`
+- 生成表格
+  - `python tinyiqa.py tables --results results/eval_results.json --out_md results/table.md --out_tex results/table.tex`
+- 模型统计
+  - `python tinyiqa.py stats`
+- 一键流水线
+  - `python tinyiqa.py pipeline`
+
+## Tiny 系列升级与两阶段 KD
+- 新增模型与模式
+  - `tiny_r34` / `tiny_r34_kd`：ResNet-34 轻量模型与 KD 模式
+  - `tiny_r18_ms` / `tiny_r18_ms_kd`：ResNet-18 轻量多尺度版本与 KD 模式
+  - 以上模式均可在配置中通过 `mode` 切换，KD 模式以 `_kd` 结尾
+- 两阶段 KD（A/B）训练
+  - Stage A（纯 KD，模仿 teacher）：
+    - `python train_stage2.py --config configs/train_koniq_tiny_r18_kd_stageA.yaml`
+    - 或 `python train_stage2.py --config configs/train_koniq_tiny_r34_kd_stageA.yaml`
+  - Stage B（MOS + 轻 KD 微调）：
+    - `python train_stage2.py --config configs/train_koniq_tiny_r18_kd_stageB.yaml`
+    - 或 `python train_stage2.py --config configs/train_koniq_tiny_r34_kd_stageB.yaml`
+  - 要求先完成 baseline 训练，确保 `kd.teacher_ckpt` 指向 `outputs/koniq_baseline/resnet_baseline_best.pth`
+- KD 配置字段说明（位于训练 YAML）
+  - `kd.enabled`: 是否开启 KD（布尔）
+  - `kd.stage`: `"A"` 或 `"B"`（纯 KD / KD+MOS）
+  - `kd.alpha`: Stage B 的轻蒸馏系数（建议 0.1–0.2）
+  - `kd.teacher_ckpt`: teacher 权重路径（通常为 ResNet-50 baseline）
+  - `kd.stageA_ckpt`: Stage A 输出的 ckpt，Stage B 会加载该权重继续训练
+- Tiny 训练策略建议
+  - `tiny_r18`: 100 epoch；`lr` 较 baseline 略小；head `Dropout(p=0.1–0.2)`
+  - `tiny_r18_kd`: Stage A 20–30 epoch；Stage B 70–80 epoch；`kd.alpha` 取较小值
+  - 可用 `mse_srcc` 组合损失（在 `loss.alpha` 中设置 SRCC 权重）
+
+## 模型统计与对比
+- 收集参数量与推理时间
+  - `python scripts/collect_model_stats.py`
+  - 输出 `results/model_stats.json`，包含 `trainable_params` 与 `avg_ms_per_image`
+- 建议在相同输入尺寸下比较 baseline 与 Tiny（如 `224×224` 或 `512×512`）
+
+## 注意事项（Tiny/KD）
+- 先训练 baseline 再进行 KD（A/B），否则 teacher 权重不存在
+- Stage B 必须加载 Stage A 的权重（`kd.stageA_ckpt`），否则效果不佳
+- 若使用你自己的工程路径运行，请同步当前仓库的改动文件（trainer、tiny 模型、backbone 与新增配置）
+- 相关性损失（SRCC）需要使用修复后的实现；若你遇到 shape 报错，可暂将 `loss.type` 设为 `mse` 先跑通，再切换回 `mse_srcc`
+
 ## 完整操作流程
 - 第 0 步：环境与代码
   - 创建虚拟环境并安装依赖
