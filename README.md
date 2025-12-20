@@ -154,6 +154,8 @@
   - `python tinyiqa.py stats`
 - 一键流水线
   - `python tinyiqa.py pipeline`
+  - 或者直接运行不带子命令：`python tinyiqa.py`（默认自动执行全流程）
+
 
 ## Tiny 系列升级与两阶段 KD
 - 新增模型与模式

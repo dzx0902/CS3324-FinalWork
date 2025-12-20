@@ -185,7 +185,8 @@ def main():
     if hasattr(args, "func"):
         args.func(args)
     else:
-        p.print_help()
+        # 默认执行整套流水线：baseline → Tiny KD A/B → R34 → 评估 → 表格 → 统计
+        cmd_pipeline(None)
 
 
 if __name__ == "__main__":
