@@ -27,6 +27,9 @@ CONFIG_ALIASES = {
     "tiny_r34": "configs/train_koniq_tiny_r34.yaml",
     "tiny_r34_kd_stageA": "configs/train_koniq_tiny_r34_kd_stageA.yaml",
     "tiny_r34_kd_stageB": "configs/train_koniq_tiny_r34_kd_stageB.yaml",
+    "tiny_r18_ms": "configs/train_koniq_tiny_r18_ms.yaml",
+    "tiny_r18_ms_kd_stageA": "configs/train_koniq_tiny_r18_ms_kd_stageA.yaml",
+    "tiny_r18_ms_kd_stageB": "configs/train_koniq_tiny_r18_ms_kd_stageB.yaml",
 }
 EVAL_DEFAULT = "configs/eval_cross_dataset.yaml"
 SUITE_DEFAULT = "configs/ablation_suite.yaml"
@@ -54,6 +57,8 @@ def build_model(name: str):
         return TinyIQA_R18()
     if n == "tiny_r34_kd":
         return TinyIQA_R34()
+    if n == "tiny_r18_ms_kd":
+        return TinyIQA_R18_MS()
     return TinyIQA_R18()
 
 
@@ -134,6 +139,9 @@ def cmd_pipeline(args):
     train_stage2(CONFIG_ALIASES["tiny_r34"])
     train_stage2(CONFIG_ALIASES["tiny_r34_kd_stageA"])
     train_stage2(CONFIG_ALIASES["tiny_r34_kd_stageB"])
+    train_stage2(CONFIG_ALIASES["tiny_r18_ms"])
+    train_stage2(CONFIG_ALIASES["tiny_r18_ms_kd_stageA"])
+    train_stage2(CONFIG_ALIASES["tiny_r18_ms_kd_stageB"])
     class _A: pass
     a = _A()
     a.config = EVAL_DEFAULT

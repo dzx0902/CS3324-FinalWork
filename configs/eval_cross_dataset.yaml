@@ -6,6 +6,10 @@ models:
   - caqf_no_attn
   - tiny_r18
   - tiny_r18_kd
+  - tiny_r34
+  - tiny_r34_kd
+  - tiny_r18_ms
+  - tiny_r18_ms_kd
 datasets:
   - koniq
   - spaq
@@ -28,6 +32,10 @@ ckpts:
   caqf: outputs/koniq_caqf/caqf_best.pth
   caqf_no_attn: outputs/koniq_caqf_no_attn/caqf_no_attn_best.pth
   tiny_r18: outputs/koniq_tiny/tiny_r18_best.pth
-  tiny_r18_kd: outputs/koniq_tiny_kd/tiny_r18_kd_best.pth
+  tiny_r18_kd: outputs/koniq_tiny_r18_kd_stageB/tiny_r18_kd_best.pth
+  tiny_r34: outputs/koniq_tiny_r34/tiny_r34_best.pth
+  tiny_r34_kd: outputs/koniq_tiny_r34_kd_stageB/tiny_r34_kd_best.pth
+  tiny_r18_ms: outputs/koniq_tiny_r18_ms/tiny_r18_ms_best.pth
+  tiny_r18_ms_kd: outputs/koniq_tiny_r18_ms_kd_stageB/tiny_r18_ms_kd_best.pth
 out_dir: results
 
