@@ -133,18 +133,17 @@ def cmd_stats(args):
 
 
 def cmd_pipeline(args):
-    train_stage2(CONFIG_ALIASES["baseline"])
-    train_stage2(CONFIG_ALIASES["tiny_r18_kd_stageA"])
-    train_stage2(CONFIG_ALIASES["tiny_r18_kd_stageB"])
-    train_stage2(CONFIG_ALIASES["tiny_r34"])
-    train_stage2(CONFIG_ALIASES["tiny_r34_kd_stageA"])
-    train_stage2(CONFIG_ALIASES["tiny_r34_kd_stageB"])
-    train_stage2(CONFIG_ALIASES["tiny_r18_ms"])
-    train_stage2(CONFIG_ALIASES["tiny_r18_ms_kd_stageA"])
-    train_stage2(CONFIG_ALIASES["tiny_r18_ms_kd_stageB"])
+    try:
+        with open(SUITE_DEFAULT, "r", encoding="utf-8") as f:
+            suite = yaml.safe_load(f)
+        for cfg_path in suite.get("train_configs", []):
+            train_stage2(cfg_path)
+        eval_cfg = suite.get("eval_config") or EVAL_DEFAULT
+    except Exception:
+        eval_cfg = EVAL_DEFAULT
     class _A: pass
     a = _A()
-    a.config = EVAL_DEFAULT
+    a.config = eval_cfg
     a.batch_size = 64
     a.num_workers = 4
     cmd_eval(a)
