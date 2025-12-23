@@ -11,6 +11,8 @@ optimizer: adamw
 loss:
   type: mse_srcc
   alpha: 0.2
+model:
+  C: 256
+  dropout_p: 0.1
 device: cuda
 seed: 42
-

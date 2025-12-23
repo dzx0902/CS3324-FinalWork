@@ -44,8 +44,9 @@ def build_dataloaders(cfg) -> Tuple[DataLoader, DataLoader]:
     return train_loader, val_loader
 
 
-def build_model(mode: str) -> nn.Module:
-    mode = mode.lower()
+def build_model_with_cfg(cfg) -> nn.Module:
+    mode = str(cfg.mode).lower()
+    margs = cfg.model or {}
     if mode == "resnet_baseline":
         return ResNetBaselineIQA()
     if mode == "stair_iqa":
@@ -57,16 +58,35 @@ def build_model(mode: str) -> nn.Module:
     if mode == "caqf_no_attn":
         return CAQF_IQA_NoAttn()
     if mode in ("tiny_r18", "tiny_r18_kd"):
-        return TinyIQA_R18()
+        return TinyIQA_R18(
+            dropout=float(margs.get("dropout_p", 0.0)),
+            mos_min=float(margs.get("mos_min", 0.0)),
+            mos_max=float(margs.get("mos_max", 100.0)),
+            use_se=bool(margs.get("use_se", False)),
+            hidden_dim1=int(margs.get("hidden_dim1", 256)),
+            hidden_dim2=int(margs.get("hidden_dim2", 0)),
+        )
     if mode in ("tiny_r34", "tiny_r34_kd"):
-        return TinyIQA_R34()
+        return TinyIQA_R34(
+            dropout=float(margs.get("dropout_p", 0.1)),
+            mos_min=float(margs.get("mos_min", 0.0)),
+            mos_max=float(margs.get("mos_max", 100.0)),
+            use_se=bool(margs.get("use_se", False)),
+            hidden_dim1=int(margs.get("hidden_dim1", 512)),
+            hidden_dim2=int(margs.get("hidden_dim2", 0)),
+        )
     if mode in ("tiny_r18_ms", "tiny_r18_ms_kd"):
-        return TinyIQA_R18_MS()
+        return TinyIQA_R18_MS(
+            C=int(margs.get("C", 256)),
+            dropout=float(margs.get("dropout_p", 0.1)),
+            mos_min=float(margs.get("mos_min", 0.0)),
+            mos_max=float(margs.get("mos_max", 100.0)),
+        )
     raise ValueError(f"Unknown mode {mode}")
 
 
 def build_model_and_teacher(cfg, device):
-    m = build_model(cfg.mode).to(device)
+    m = build_model_with_cfg(cfg).to(device)
     t = None
     kd_cfg = cfg.kd or {}
     if str(cfg.mode).lower().endswith("_kd") or kd_cfg.get("enabled", False):
@@ -117,10 +137,16 @@ def train_stage2(config_path: str) -> None:
                 if kd_stage == "A":
                     loss = torch.mean((pred - t_pred) ** 2)
                 else:
+                    half = int(kd_cfg.get("kd_half_epochs", 0))
+                    use_kd_now = True
+                    if half > 0:
+                        use_kd_now = epoch <= min(half, cfg.epochs)
+                    elif cfg.epochs >= 2:
+                        use_kd_now = epoch <= (cfg.epochs // 2)
                     alpha = float(kd_cfg.get("alpha", cfg.loss.get("kd_alpha", 0.1)))
                     kd = torch.mean((pred - t_pred) ** 2)
                     mse = torch.mean((pred - mos) ** 2)
-                    loss = mse + alpha * kd
+                    loss = mse + (alpha * kd if use_kd_now else 0.0)
             else:
                 loss = loss_fn(pred, mos)
             optimizer.zero_grad()

@@ -23,6 +23,7 @@ class TrainConfig:
     teacher_ckpt: str | None = None
     stage1_ckpt: str | None = None
     kd: Dict[str, Any] | None = None
+    model: Dict[str, Any] | None = None
     num_workers: int = 4
     device: str = "cuda"
     seed: int = 42
@@ -51,6 +52,7 @@ def build_train_config(cfg: Dict[str, Any]) -> TrainConfig:
         teacher_ckpt=cfg.get("teacher_ckpt"),
         stage1_ckpt=cfg.get("stage1_ckpt"),
         kd=cfg.get("kd"),
+        model=cfg.get("model", {}),
         num_workers=int(cfg.get("num_workers", 4)),
         device=str(cfg.get("device", "cuda")),
         seed=int(cfg.get("seed", 42)),

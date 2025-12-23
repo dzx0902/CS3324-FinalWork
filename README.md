@@ -156,6 +156,25 @@
   - `python tinyiqa.py pipeline`
   - 或者直接运行不带子命令：`python tinyiqa.py`（默认自动执行全流程）
 
+### 配置驱动的统一训练
+- 流水线从 `configs/ablation_suite.yaml` 读取 `train_configs` 顺序训练，并使用 `eval_config` 做统一评估与画图
+- 仅训练“受改动影响/新增”的任务：请将不需要重训的配置从 `train_configs` 列表删除或注释
+  - 建议最小重训列表（本次改动影响项）：
+    - `configs/train_koniq_tiny_r18_kd_stageA.yaml`（两阶段 KD 新策略）
+    - `configs/train_koniq_tiny_r18_kd_stageB.yaml`
+    - `configs/train_koniq_tiny_r34.yaml`（启用 SE 与加宽头）
+    - `configs/train_koniq_tiny_r34_mse.yaml`、`configs/train_koniq_tiny_r34_mse_srcc.yaml`（对比实验）
+    - `configs/train_koniq_tiny_r18_ms.yaml`、`configs/train_koniq_tiny_r18_ms_kd_stageA.yaml`、`configs/train_koniq_tiny_r18_ms_kd_stageB.yaml`（新增 MS 版本）
+- 运行只重训项（编辑好 `ablation_suite.yaml` 后）：
+  - `python tinyiqa.py pipeline`
+### 新增：仅重训改动项的快捷命令
+- 无需编辑套件文件，直接训练受改动影响与新增的任务：
+  - `python tinyiqa.py delta`
+- 包含的训练项：
+  - `tiny_r18_kd_stageA`、`tiny_r18_kd_stageB`
+  - `tiny_r34`（结构增强版）、`tiny_r34_mse`、`tiny_r34_mse_srcc`
+  - `tiny_r18_ms`、`tiny_r18_ms_kd_stageA`、`tiny_r18_ms_kd_stageB`
+- 训练结束后自动执行评估、表格与统计，输出到 `results/` 与 `outputs/`
 
 ## Tiny 系列升级与两阶段 KD
 - 新增模型与模式
@@ -174,12 +193,29 @@
   - `kd.enabled`: 是否开启 KD（布尔）
   - `kd.stage`: `"A"` 或 `"B"`（纯 KD / KD+MOS）
   - `kd.alpha`: Stage B 的轻蒸馏系数（建议 0.1–0.2）
+  - `kd.kd_half_epochs`: B 阶段中仅前半程启用 KD（可选，整数；不设置则默认前半程）
   - `kd.teacher_ckpt`: teacher 权重路径（通常为 ResNet-50 baseline）
   - `kd.stageA_ckpt`: Stage A 输出的 ckpt，Stage B 会加载该权重继续训练
 - Tiny 训练策略建议
   - `tiny_r18`: 100 epoch；`lr` 较 baseline 略小；head `Dropout(p=0.1–0.2)`
   - `tiny_r18_kd`: Stage A 20–30 epoch；Stage B 70–80 epoch；`kd.alpha` 取较小值
   - 可用 `mse_srcc` 组合损失（在 `loss.alpha` 中设置 SRCC 权重）
+ - Tiny 结构增强（可选）
+   - 通过训练 YAML 的 `model` 字段配置结构：
+     - 示例（R34）：
+       - ```
+         model:
+           use_se: true
+           hidden_dim1: 512
+           hidden_dim2: 256
+           dropout_p: 0.1
+         ```
+     - 多尺度（R18-MS）：
+       - ```
+         model:
+           C: 256
+           dropout_p: 0.1
+         ```
 
 ## 模型统计与对比
 - 收集参数量与推理时间
@@ -237,5 +273,15 @@
   - 改 batch/epoch：编辑训练配置的 `batch_size`/`epochs`
   - 改损失：将 `loss.type` 改为 `mse_srcc` 或 `mse_rank`，并设置 `alpha/margin`
   - 仅评估某几个模型或数据集：在评估配置中删减对应列表项
+
+## 只重训受影响与新增的任务（快速指南）
+- 若你已有旧版训练结果，建议仅重训以下任务以反映本次改动：
+  - 两阶段 KD 改造：`tiny_r18_kd`（`configs/train_koniq_tiny_r18_kd_stageA.yaml`、`configs/train_koniq_tiny_r18_kd_stageB.yaml`）
+  - 结构增强：`tiny_r34`（`configs/train_koniq_tiny_r34.yaml`），并跑 `mse` / `mse_srcc` 对比（`configs/train_koniq_tiny_r34_mse.yaml`、`configs/train_koniq_tiny_r34_mse_srcc.yaml`）
+  - 新增模型：`tiny_r18_ms`（含 KD 的 A/B 两阶段）
+- 操作方法：
+  - 编辑 `configs/ablation_suite.yaml` 的 `train_configs`，仅保留以上配置
+  - 启动统一流程：`python tinyiqa.py pipeline`
+  - 生成结果表与散点图位于 `results/`；最佳权重位于各自 `outputs/{model}/*_best.pth`
 
 

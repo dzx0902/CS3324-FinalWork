@@ -3,10 +3,10 @@ dataset: koniq
 image_root: data
 train_split: data/metas/koniq_train.json
 val_split: data/metas/koniq_test.json
-output_dir: outputs/koniq_tiny_r34
-epochs: 100
+output_dir: outputs/koniq_tiny_r34_mse_srcc
+epochs: 80
 batch_size: 32
-lr: 8e-5
+lr: 1e-4
 optimizer: adamw
 loss:
   type: mse_srcc
@@ -18,3 +18,4 @@ model:
   dropout_p: 0.1
 device: cuda
 seed: 42
+

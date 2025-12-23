@@ -17,6 +17,8 @@ kd:
   alpha: 0.1
   teacher_ckpt: outputs/koniq_baseline/resnet_baseline_best.pth
   stageA_ckpt: outputs/koniq_tiny_r18_ms_kd_stageA/tiny_r18_ms_kd_stageA.pth
+model:
+  C: 256
+  dropout_p: 0.1
 device: cuda
 seed: 42
-

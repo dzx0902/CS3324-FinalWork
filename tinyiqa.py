@@ -30,6 +30,8 @@ CONFIG_ALIASES = {
     "tiny_r18_ms": "configs/train_koniq_tiny_r18_ms.yaml",
     "tiny_r18_ms_kd_stageA": "configs/train_koniq_tiny_r18_ms_kd_stageA.yaml",
     "tiny_r18_ms_kd_stageB": "configs/train_koniq_tiny_r18_ms_kd_stageB.yaml",
+    "tiny_r34_mse": "configs/train_koniq_tiny_r34_mse.yaml",
+    "tiny_r34_mse_srcc": "configs/train_koniq_tiny_r34_mse_srcc.yaml",
 }
 EVAL_DEFAULT = "configs/eval_cross_dataset.yaml"
 SUITE_DEFAULT = "configs/ablation_suite.yaml"
@@ -133,17 +135,44 @@ def cmd_stats(args):
 
 
 def cmd_pipeline(args):
-    try:
-        with open(SUITE_DEFAULT, "r", encoding="utf-8") as f:
-            suite = yaml.safe_load(f)
-        for cfg_path in suite.get("train_configs", []):
-            train_stage2(cfg_path)
-        eval_cfg = suite.get("eval_config") or EVAL_DEFAULT
-    except Exception:
-        eval_cfg = EVAL_DEFAULT
+    train_stage2(CONFIG_ALIASES["baseline"])
+    train_stage2(CONFIG_ALIASES["tiny_r18_kd_stageA"])
+    train_stage2(CONFIG_ALIASES["tiny_r18_kd_stageB"])
+    train_stage2(CONFIG_ALIASES["tiny_r34"])
+    train_stage2(CONFIG_ALIASES["tiny_r34_kd_stageA"])
+    train_stage2(CONFIG_ALIASES["tiny_r34_kd_stageB"])
+    eval_cfg = EVAL_DEFAULT
     class _A: pass
     a = _A()
     a.config = eval_cfg
+    a.batch_size = 64
+    a.num_workers = 4
+    cmd_eval(a)
+    class _B: pass
+    b = _B()
+    b.results = "results/eval_results.json"
+    b.out_md = "results/table.md"
+    b.out_tex = "results/table.tex"
+    cmd_tables(b)
+    cmd_stats(None)
+
+
+def cmd_delta(args):
+    targets = [
+        CONFIG_ALIASES["tiny_r18_kd_stageA"],
+        CONFIG_ALIASES["tiny_r18_kd_stageB"],
+        CONFIG_ALIASES["tiny_r34"],
+        CONFIG_ALIASES["tiny_r34_mse"],
+        CONFIG_ALIASES["tiny_r34_mse_srcc"],
+        CONFIG_ALIASES["tiny_r18_ms"],
+        CONFIG_ALIASES["tiny_r18_ms_kd_stageA"],
+        CONFIG_ALIASES["tiny_r18_ms_kd_stageB"],
+    ]
+    for cfg in targets:
+        train_stage2(cfg)
+    class _A: pass
+    a = _A()
+    a.config = EVAL_DEFAULT
     a.batch_size = 64
     a.num_workers = 4
     cmd_eval(a)
@@ -188,6 +217,8 @@ def main():
     st.set_defaults(func=cmd_stats)
     pl = sub.add_parser("pipeline")
     pl.set_defaults(func=cmd_pipeline)
+    dl = sub.add_parser("delta")
+    dl.set_defaults(func=cmd_delta)
     args = p.parse_args()
     if hasattr(args, "func"):
         args.func(args)

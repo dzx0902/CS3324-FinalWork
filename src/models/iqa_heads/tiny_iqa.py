@@ -5,22 +5,48 @@ import torch.nn as nn
 from ..backbones.resnet_backbone import ResNetFeatureExtractor
 
 
+class SEBlock(nn.Module):
+    def __init__(self, channels: int, reduction: int = 16):
+        super().__init__()
+        self.avg = nn.AdaptiveAvgPool2d(1)
+        self.fc = nn.Sequential(
+            nn.Linear(channels, channels // reduction, bias=False),
+            nn.ReLU(inplace=True),
+            nn.Linear(channels // reduction, channels, bias=False),
+            nn.Sigmoid(),
+        )
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        b, c, _, _ = x.size()
+        y = self.avg(x).view(b, c)
+        y = self.fc(y).view(b, c, 1, 1)
+        return x * y
+
+
 class TinyIQA_R18(nn.Module):
-    def __init__(self, dropout: float = 0.0, mos_min: float = 0.0, mos_max: float = 100.0):
+    def __init__(self, dropout: float = 0.0, mos_min: float = 0.0, mos_max: float = 100.0, use_se: bool = False, hidden_dim1: int = 256, hidden_dim2: int = 0):
         super().__init__()
         self.backbone = ResNetFeatureExtractor("resnet18", pretrained=True)
         c4 = self.backbone.out_channels["layer4"]
+        self.se = SEBlock(c4) if use_se else None
         self.pool = nn.AdaptiveAvgPool2d((1, 1))
-        head_layers = [nn.Linear(c4, 256), nn.ReLU(inplace=True)]
+        h1 = hidden_dim1 if hidden_dim1 > 0 else 256
+        h2 = hidden_dim2 if hidden_dim2 > 0 else 0
+        head_layers = [nn.Linear(c4, h1), nn.ReLU(inplace=True)]
         if dropout > 0:
             head_layers.append(nn.Dropout(dropout))
-        head_layers += [nn.Linear(256, 1)]
+        if h2 > 0:
+            head_layers += [nn.Linear(h1, h2), nn.ReLU(inplace=True)]
+            head_layers += [nn.Linear(h2, 1)]
+        else:
+            head_layers += [nn.Linear(h1, 1)]
         self.head = nn.Sequential(*head_layers)
         self.mos_min = mos_min
         self.mos_max = mos_max
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         f4 = self.backbone(x)["layer4"]
+        if self.se is not None:
+            f4 = self.se(f4)
         z = self.pool(f4).flatten(1)
         y = self.head(z)
         y = torch.tanh(y)
@@ -29,21 +55,30 @@ class TinyIQA_R18(nn.Module):
 
 
 class TinyIQA_R34(nn.Module):
-    def __init__(self, dropout: float = 0.1, mos_min: float = 0.0, mos_max: float = 100.0):
+    def __init__(self, dropout: float = 0.1, mos_min: float = 0.0, mos_max: float = 100.0, use_se: bool = False, hidden_dim1: int = 512, hidden_dim2: int = 0):
         super().__init__()
         self.backbone = ResNetFeatureExtractor("resnet34", pretrained=True)
         c4 = self.backbone.out_channels["layer4"]
+        self.se = SEBlock(c4) if use_se else None
         self.pool = nn.AdaptiveAvgPool2d((1, 1))
-        head_layers = [nn.Linear(c4, 512), nn.ReLU(inplace=True)]
+        h1 = hidden_dim1 if hidden_dim1 > 0 else 512
+        h2 = hidden_dim2 if hidden_dim2 > 0 else 0
+        head_layers = [nn.Linear(c4, h1), nn.ReLU(inplace=True)]
         if dropout > 0:
             head_layers.append(nn.Dropout(dropout))
-        head_layers += [nn.Linear(512, 1)]
+        if h2 > 0:
+            head_layers += [nn.Linear(h1, h2), nn.ReLU(inplace=True)]
+            head_layers += [nn.Linear(h2, 1)]
+        else:
+            head_layers += [nn.Linear(h1, 1)]
         self.head = nn.Sequential(*head_layers)
         self.mos_min = mos_min
         self.mos_max = mos_max
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         f4 = self.backbone(x)["layer4"]
+        if self.se is not None:
+            f4 = self.se(f4)
         z = self.pool(f4).flatten(1)
         y = self.head(z)
         y = torch.tanh(y)

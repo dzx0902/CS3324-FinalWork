@@ -14,5 +14,7 @@ train_configs:
   - configs/train_koniq_tiny_r18_ms.yaml
   - configs/train_koniq_tiny_r18_ms_kd_stageA.yaml
   - configs/train_koniq_tiny_r18_ms_kd_stageB.yaml
+  - configs/train_koniq_tiny_r34_mse.yaml
+  - configs/train_koniq_tiny_r34_mse_srcc.yaml
 eval_config: configs/eval_cross_dataset.yaml
 
