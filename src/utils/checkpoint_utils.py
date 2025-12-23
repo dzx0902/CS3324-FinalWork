@@ -12,6 +12,14 @@ def save_ckpt(model: torch.nn.Module, optimizer: torch.optim.Optimizer, epoch: i
 
 def load_model_ckpt(model: torch.nn.Module, path: str, strict: bool = True) -> Dict[str, Any]:
     state = torch.load(path, map_location="cpu")
-    model.load_state_dict(state["model"], strict=strict)
-    return state
+    target = state.get("model", {})
+    current = model.state_dict()
+    filtered = {}
+    for k, v in target.items():
+        if k in current and current[k].shape == v.shape:
+            filtered[k] = v
+    missing = set(current.keys()) - set(filtered.keys())
+    unexpected = set(target.keys()) - set(filtered.keys())
+    model.load_state_dict(filtered, strict=False)
+    return {"model": filtered, "optimizer": state.get("optimizer"), "epoch": state.get("epoch"), "missing": list(missing), "unexpected": list(unexpected)}
 

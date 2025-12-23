@@ -50,15 +50,15 @@ def build_model(name: str):
     if n == "caqf_no_attn":
         return CAQF_IQA_NoAttn()
     if n == "tiny_r18":
-        return TinyIQA_R18()
+        return TinyIQA_R18(hidden_dim1=256, hidden_dim2=0)
     if n == "tiny_r34":
-        return TinyIQA_R34()
+        return TinyIQA_R34(use_se=True, hidden_dim1=512, hidden_dim2=256)
     if n == "tiny_r18_ms":
         return TinyIQA_R18_MS()
     if n == "tiny_r18_kd":
-        return TinyIQA_R18()
+        return TinyIQA_R18(hidden_dim1=256, hidden_dim2=0)
     if n == "tiny_r34_kd":
-        return TinyIQA_R34()
+        return TinyIQA_R34(use_se=True, hidden_dim1=512, hidden_dim2=256)
     if n == "tiny_r18_ms_kd":
         return TinyIQA_R18_MS()
     return TinyIQA_R18()
@@ -184,6 +184,20 @@ def cmd_delta(args):
     cmd_tables(b)
     cmd_stats(None)
 
+def cmd_delta_eval(args):
+    class _A: pass
+    a = _A()
+    a.config = EVAL_DEFAULT
+    a.batch_size = 64
+    a.num_workers = 4
+    cmd_eval(a)
+    class _B: pass
+    b = _B()
+    b.results = "results/eval_results.json"
+    b.out_md = "results/table.md"
+    b.out_tex = "results/table.tex"
+    cmd_tables(b)
+    cmd_stats(None)
 
 def main():
     p = argparse.ArgumentParser()
@@ -219,6 +233,8 @@ def main():
     pl.set_defaults(func=cmd_pipeline)
     dl = sub.add_parser("delta")
     dl.set_defaults(func=cmd_delta)
+    de = sub.add_parser("delta_eval")
+    de.set_defaults(func=cmd_delta_eval)
     args = p.parse_args()
     if hasattr(args, "func"):
         args.func(args)
