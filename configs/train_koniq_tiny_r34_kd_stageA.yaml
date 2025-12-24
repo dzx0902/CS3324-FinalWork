@@ -10,6 +10,11 @@ lr: 1e-4
 optimizer: adamw
 loss:
   type: mse
+model:
+  use_se: true
+  hidden_dim1: 512
+  hidden_dim2: 256
+  dropout_p: 0.1
 kd:
   enabled: true
   stage: "A"

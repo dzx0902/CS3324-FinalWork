@@ -203,6 +203,41 @@ def cmd_delta_eval(args):
     cmd_tables(b)
     cmd_stats(None)
 
+def cmd_remedy(args):
+    """
+    Specifically re-trains tiny_r34_kd (Stage A+B), tiny_r34_mse, and tiny_r34_mse_srcc.
+    Then runs evaluation, plotting, tables, and stats.
+    """
+    targets = [
+        CONFIG_ALIASES["tiny_r34_kd_stageA"],
+        CONFIG_ALIASES["tiny_r34_kd_stageB"],
+        CONFIG_ALIASES["tiny_r34_mse"],
+        CONFIG_ALIASES["tiny_r34_mse_srcc"],
+    ]
+    for cfg in targets:
+        print(f"Running remedy training for: {cfg}")
+        train_stage2(cfg)
+    
+    print("Running evaluation...")
+    class _A: pass
+    a = _A()
+    a.config = EVAL_DEFAULT
+    a.batch_size = 64
+    a.num_workers = 4
+    cmd_eval(a)
+
+    print("Generating tables...")
+    class _B: pass
+    b = _B()
+    b.results = "results/eval_results.json"
+    b.out_md = "results/table.md"
+    b.out_tex = "results/table.tex"
+    cmd_tables(b)
+
+    print("Collecting stats...")
+    cmd_stats(None)
+    print("Remedy pipeline completed.")
+
 def main():
     p = argparse.ArgumentParser()
     sub = p.add_subparsers()
@@ -239,6 +274,8 @@ def main():
     dl.set_defaults(func=cmd_delta)
     de = sub.add_parser("delta_eval")
     de.set_defaults(func=cmd_delta_eval)
+    rm = sub.add_parser("remedy")
+    rm.set_defaults(func=cmd_remedy)
     args = p.parse_args()
     if hasattr(args, "func"):
         args.func(args)

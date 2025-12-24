@@ -16,21 +16,18 @@ class MAELoss(nn.Module):
 
 
 class SRCCLoss(nn.Module):
-    """Negative SRCC as loss: 1 - srcc approximated by ranking correlation."""
+    """
+    Differentiable proxy for SRCC loss using Pearson Correlation.
+    Since sorting is non-differentiable, we optimize for linear correlation (Pearson),
+    which is a strong proxy for rank correlation (Spearman).
+    """
     def forward(self, y_pred: torch.Tensor, y_true: torch.Tensor) -> torch.Tensor:
-        def rankdata(t: torch.Tensor) -> torch.Tensor:
-            v = t.view(-1)
-            args = torch.argsort(v, dim=0)
-            ranks = torch.empty_like(v, dtype=torch.float32)
-            ranks[args] = torch.arange(v.shape[0], device=t.device, dtype=torch.float32)
-            return ranks.view_as(t)
-        rp = rankdata(y_pred)
-        rt = rankdata(y_true)
-        rp = rp - rp.mean()
-        rt = rt - rt.mean()
-        denom = torch.sqrt((rp ** 2).sum()) * torch.sqrt((rt ** 2).sum()) + 1e-8
-        corr = (rp * rt).sum() / denom
-        return 1.0 - corr
+        # Flatten and center
+        vx = y_pred.view(-1) - torch.mean(y_pred)
+        vy = y_true.view(-1) - torch.mean(y_true)
+        # Compute Pearson correlation
+        cost = torch.sum(vx * vy) / (torch.sqrt(torch.sum(vx ** 2)) * torch.sqrt(torch.sum(vy ** 2)) + 1e-8)
+        return 1.0 - cost
 
 
 class PairwiseRankLoss(nn.Module):

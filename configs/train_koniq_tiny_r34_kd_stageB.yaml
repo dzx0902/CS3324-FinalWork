@@ -11,6 +11,11 @@ optimizer: adamw
 loss:
   type: mse_srcc
   alpha: 0.2
+model:
+  use_se: true
+  hidden_dim1: 512
+  hidden_dim2: 256
+  dropout_p: 0.1
 kd:
   enabled: true
   stage: "B"
