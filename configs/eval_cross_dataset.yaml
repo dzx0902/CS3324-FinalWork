@@ -8,6 +8,8 @@ models:
   - tiny_r18_kd
   - tiny_r34
   - tiny_r34_kd
+  - tiny_r34_mse
+  - tiny_r34_mse_srcc
   - tiny_r18_ms
   - tiny_r18_ms_kd
 datasets:
@@ -35,7 +37,8 @@ ckpts:
   tiny_r18_kd: outputs/koniq_tiny_r18_kd_stageB/tiny_r18_kd_best.pth
   tiny_r34: outputs/koniq_tiny_r34/tiny_r34_best.pth
   tiny_r34_kd: outputs/koniq_tiny_r34_kd_stageB/tiny_r34_kd_best.pth
+  tiny_r34_mse: outputs/koniq_tiny_r34_mse/tiny_r34_best.pth
+  tiny_r34_mse_srcc: outputs/koniq_tiny_r34_mse_srcc/tiny_r34_best.pth
   tiny_r18_ms: outputs/koniq_tiny_r18_ms/tiny_r18_ms_best.pth
   tiny_r18_ms_kd: outputs/koniq_tiny_r18_ms_kd_stageB/tiny_r18_ms_kd_best.pth
 out_dir: results
-

@@ -59,6 +59,10 @@ def build_model(name: str):
         return TinyIQA_R18(hidden_dim1=256, hidden_dim2=0)
     if n == "tiny_r34_kd":
         return TinyIQA_R34(use_se=True, hidden_dim1=512, hidden_dim2=256)
+    if n == "tiny_r34_mse":
+        return TinyIQA_R34(use_se=True, hidden_dim1=512, hidden_dim2=256)
+    if n == "tiny_r34_mse_srcc":
+        return TinyIQA_R34(use_se=True, hidden_dim1=512, hidden_dim2=256)
     if n == "tiny_r18_ms_kd":
         return TinyIQA_R18_MS()
     return TinyIQA_R18()
